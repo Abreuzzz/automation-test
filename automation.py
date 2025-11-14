@@ -1,17 +1,17 @@
-"""Automation script for fetching and filtering Studio Velocity classes.
+"""Automação para buscar e filtrar aulas do Studio Velocity.
 
-This module encapsulates the workflow described in the user requirements:
+Este módulo implementa o fluxo descrito nos requisitos do usuário:
 
-1. Fetch the schedule for the next 14 days (two pages) from the public API.
-2. Filter the classes taught by instructor 525 that are still open.
-3. Classify the classes as weekday, weekend or holiday and apply the
-   time-of-day rule for weekdays (after 19:00 only).
-4. Retrieve the full event details for the filtered classes and extract the
-   available map spots together with instructor details.
+1. Buscar a agenda dos próximos 14 dias (duas páginas) na API pública.
+2. Filtrar as aulas ministradas pelo instrutor 525 que ainda estejam abertas.
+3. Classificar as aulas como dia de semana, final de semana ou feriado e aplicar
+   a regra de horário para dias úteis (apenas após 19h).
+4. Obter os detalhes completos dos eventos filtrados e extrair os lugares
+   disponíveis com informações do instrutor.
 
-The module exposes helper functions to keep the behaviour testable and a
-``main`` entry point that prints the final payload as JSON when the script is
-executed directly.
+O módulo expõe funções auxiliares para manter o comportamento testável e um
+ponto de entrada ``main`` que imprime o payload final em JSON quando o script é
+executado diretamente.
 """
 
 from __future__ import annotations
@@ -28,7 +28,7 @@ import requests
 SCHEDULE_URL = "https://studiovelocity.com.br/api/v1/events/schedule/"
 EVENT_URL = "https://studiovelocity.com.br/api/v1/events/events/"
 
-# Default request parameters mirrored from ``reservar_bike.txt``.
+# Parâmetros padrões da requisição espelhados do ``reservar_bike.txt``.
 DEFAULT_SCHEDULE_PARAMS = {
     "sort": "start_time",
     "is_canceled": "false",
@@ -40,24 +40,24 @@ DEFAULT_SCHEDULE_PARAMS = {
 
 @dataclass
 class ScheduleEvent:
-    """Small helper dataclass with the subset of fields we require."""
+    """Dataclass auxiliar com o subconjunto de campos necessário."""
 
     token: str
     start_time: datetime
 
 
 def _parse_start_time(raw_start: str) -> datetime:
-    """Parse the ``start_time`` value returned by the API.
+    """Converte o valor ``start_time`` retornado pela API para ``datetime``.
 
-    The API returns ISO 8601 strings with the timezone offset (e.g.
-    ``"2025-11-14T19:30:00-03:00"``). ``datetime.fromisoformat`` understands
-    this format, so we can parse it directly.
+    A API retorna strings no formato ISO 8601 com fuso horário (por exemplo,
+    ``"2025-11-14T19:30:00-03:00"``). ``datetime.fromisoformat`` entende esse
+    formato, portanto podemos fazer o parse diretamente.
     """
 
     try:
         return datetime.fromisoformat(raw_start)
-    except ValueError as exc:  # pragma: no cover - defensive programming
-        raise ValueError(f"Invalid start_time value: {raw_start}") from exc
+    except ValueError as exc:  # pragma: no cover - programação defensiva
+        raise ValueError(f"Valor de start_time inválido: {raw_start}") from exc
 
 
 def fetch_schedule(
@@ -67,17 +67,16 @@ def fetch_schedule(
     start: Optional[date] = None,
     end: Optional[date] = None,
 ) -> List[Dict]:
-    """Fetch schedule events for the selected date window.
+    """Busca eventos da agenda para a janela de datas selecionada.
 
     Args:
-        session: a ``requests.Session`` instance used for HTTP calls.
-        pages: which pages to download from the schedule endpoint.
-        start: starting date for the window (inclusive). Defaults to today.
-        end: ending date for the window (inclusive). Defaults to ``start`` + 14
-            days.
+        session: instância de ``requests.Session`` utilizada para chamadas HTTP.
+        pages: páginas que serão baixadas do endpoint de agenda.
+        start: data inicial da janela (inclusiva). Padrão: hoje.
+        end: data final da janela (inclusiva). Padrão: ``start`` + 14 dias.
 
     Returns:
-        A list with the combined ``results`` from all downloaded pages.
+        Lista com os ``results`` combinados de todas as páginas baixadas.
     """
 
     if start is None:
@@ -99,26 +98,28 @@ def fetch_schedule(
         payload = response.json()
 
         results = payload.get("results", [])
-        if not isinstance(results, list):  # pragma: no cover - defensive
-            raise TypeError("Unexpected schedule payload: 'results' is not a list")
+        if not isinstance(results, list):  # pragma: no cover - programação defensiva
+            raise TypeError("Payload de agenda inesperado: 'results' não é uma lista")
 
         aggregated_results.extend(results)
 
     return aggregated_results
 
 
-def classify_event_day(start_dt: datetime, *, country_code: str = "BR") -> str:
-    """Classify the event day as ``weekday``, ``weekend`` or ``holiday``.
+def classify_event_day(start_dt: datetime, *, estado: str = "SP") -> str:
+    """Classifica o dia do evento como ``dia_de_semana``, ``final_de_semana`` ou ``feriado``.
 
     Args:
-        start_dt: datetime of the class start.
-        country_code: country code used for the holidays calendar.
+        start_dt: ``datetime`` do início da aula.
+        estado: sigla do estado brasileiro utilizado para o calendário de feriados.
 
     Returns:
-        One of ``"feriado"``, ``"final_de_semana"`` or ``"dia_de_semana"``.
+        Uma das strings ``"feriado"``, ``"final_de_semana"`` ou ``"dia_de_semana"``.
     """
 
-    br_holidays = holidays.country_holidays(country_code, years={start_dt.year})
+    br_holidays = holidays.country_holidays(
+        "BR", subdiv=estado, years={start_dt.year}
+    )
 
     if start_dt.date() in br_holidays:
         return "feriado"
@@ -134,7 +135,7 @@ def filter_events(
     *,
     instructor_id: int = 525,
 ) -> List[ScheduleEvent]:
-    """Filter schedule events according to the business rules."""
+    """Filtra os eventos da agenda conforme as regras de negócio."""
 
     filtered: List[ScheduleEvent] = []
     evening_cutoff = time(hour=19)
@@ -148,14 +149,14 @@ def filter_events(
 
         start_raw = event.get("start_time")
         if not start_raw:
-            continue  # Skip malformed entries silently.
+            continue  # Ignora entradas malformadas de forma silenciosa.
 
         start_dt = _parse_start_time(start_raw)
 
         day_classification = classify_event_day(start_dt)
 
         if day_classification == "dia_de_semana" and start_dt.timetz().replace(tzinfo=None) <= evening_cutoff:
-            # Only classes strictly after 19:00 on weekdays are allowed.
+            # Apenas aulas estritamente após 19h em dias de semana são válidas.
             continue
 
         filtered.append(ScheduleEvent(token=event["token"], start_time=start_dt))
@@ -164,7 +165,7 @@ def filter_events(
 
 
 def fetch_event_details(session: requests.Session, token: str) -> Dict:
-    """Fetch the details for a specific event token."""
+    """Busca os detalhes para um token de evento específico."""
 
     url = f"{EVENT_URL}{token}/"
     response = session.get(url, timeout=30)
@@ -173,7 +174,7 @@ def fetch_event_details(session: requests.Session, token: str) -> Dict:
 
 
 def extract_available_spots(event_payload: Dict) -> List[Dict]:
-    """Extract available spots with instructor information from an event payload."""
+    """Extrai os lugares disponíveis com informações do instrutor a partir do payload."""
 
     instructor_detail = event_payload.get("instructor_detail") or {}
     nickname = instructor_detail.get("nickname")
@@ -216,7 +217,7 @@ def collect_available_spots(
     session: requests.Session,
     schedule_events: Sequence[ScheduleEvent],
 ) -> List[Dict]:
-    """Fetch details for each schedule event and collect available spots."""
+    """Busca detalhes de cada evento e consolida os lugares disponíveis."""
 
     all_spots: List[Dict] = []
     for schedule_event in schedule_events:
@@ -226,14 +227,25 @@ def collect_available_spots(
     return all_spots
 
 
-def main() -> None:
-    """Execute the full automation pipeline and print the JSON payload."""
+def run_automation(session: Optional[requests.Session] = None) -> List[Dict]:
+    """Executa o fluxo completo e retorna a lista de lugares disponíveis."""
 
-    session = requests.Session()
+    internal_session = session or requests.Session()
 
-    schedule = fetch_schedule(session)
+    schedule = fetch_schedule(internal_session)
     filtered_events = filter_events(schedule)
-    available_spots = collect_available_spots(session, filtered_events)
+    available_spots = collect_available_spots(internal_session, filtered_events)
+
+    if session is None:
+        internal_session.close()
+
+    return available_spots
+
+
+def main() -> None:
+    """Executa todo o fluxo de automação e imprime o payload JSON."""
+
+    available_spots = run_automation()
 
     print(json.dumps(available_spots, ensure_ascii=False, indent=2))
 
