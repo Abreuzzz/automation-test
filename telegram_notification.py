@@ -215,7 +215,14 @@ def format_spot_summary(spots: Iterable[Dict[str, Any]]) -> FormattedSummary:
                 event_hour = start_dt.strftime("%H:%M")
 
             hour_label = event_hour or "Horário não informado"
-            duration = representative_spot.get("duration_time") or "Duração não informada"
+
+            duration_value = representative_spot.get("duration_time")
+            if isinstance(duration_value, (int, float)):
+                duration = f"{duration_value:g} min"
+            elif duration_value:
+                duration = str(duration_value)
+            else:
+                duration = "Duração não informada"
             event_name = representative_spot.get("event_name") or "Aula"
             instructor = _build_instructor_label(representative_spot)
             tagline = representative_spot.get("instructor_tagline")
