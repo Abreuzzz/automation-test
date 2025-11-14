@@ -122,14 +122,29 @@ def main() -> None:
     token = args.token or os.environ.get("TELEGRAM_BOT_TOKEN")
     chat_id = args.chat_id or os.environ.get("TELEGRAM_CHAT_ID")
 
-    available_spots = automation.run_automation()
+    result = automation.run_automation()
+    available_spots = result.spots
     message = format_spot_summary(available_spots)
+
+    execution_report = (
+        "Tempo total da automação: "
+        f"{result.elapsed_seconds:.2f} segundos (início: {result.started_at.isoformat()} | "
+        f"fim: {result.finished_at.isoformat()})."
+    )
+
+    summary_path = os.environ.get("GITHUB_STEP_SUMMARY")
+    if summary_path:
+        with open(summary_path, "a", encoding="utf-8") as summary_file:
+            summary_file.write(f"{execution_report}\n")
 
     if args.dry_run:
         print(message)
+        print()
+        print(execution_report)
         return
 
     send_telegram_message(token or "", chat_id or "", message)
+    print(execution_report)
 
 
 if __name__ == "__main__":

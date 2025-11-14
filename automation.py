@@ -19,6 +19,7 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta
+from time import perf_counter
 from typing import Dict, Iterable, List, Optional, Sequence
 
 import holidays
@@ -44,6 +45,26 @@ class ScheduleEvent:
 
     token: str
     start_time: datetime
+
+
+@dataclass
+class AutomationResult:
+    """Resultado agregado contendo as vagas e métricas de execução."""
+
+    spots: List[Dict]
+    started_at: datetime
+    finished_at: datetime
+    elapsed_seconds: float
+
+    def to_dict(self) -> Dict:
+        """Converte o resultado para um ``dict`` serializável em JSON."""
+
+        return {
+            "spots": self.spots,
+            "started_at": self.started_at.isoformat(),
+            "finished_at": self.finished_at.isoformat(),
+            "elapsed_seconds": self.elapsed_seconds,
+        }
 
 
 def _parse_start_time(raw_start: str) -> datetime:
@@ -227,27 +248,43 @@ def collect_available_spots(
     return all_spots
 
 
-def run_automation(session: Optional[requests.Session] = None) -> List[Dict]:
-    """Executa o fluxo completo e retorna a lista de lugares disponíveis."""
+def run_automation(session: Optional[requests.Session] = None) -> AutomationResult:
+    """Executa o fluxo completo e retorna as vagas disponíveis com métricas."""
 
-    internal_session = session or requests.Session()
+    should_close_session = False
+    if session is None:
+        internal_session = requests.Session()
+        should_close_session = True
+    else:
+        internal_session = session
+
+    started_at = datetime.now().astimezone()
+    timer_start = perf_counter()
 
     schedule = fetch_schedule(internal_session)
     filtered_events = filter_events(schedule)
     available_spots = collect_available_spots(internal_session, filtered_events)
 
-    if session is None:
+    finished_at = datetime.now().astimezone()
+    elapsed_seconds = perf_counter() - timer_start
+
+    if should_close_session:
         internal_session.close()
 
-    return available_spots
+    return AutomationResult(
+        spots=available_spots,
+        started_at=started_at,
+        finished_at=finished_at,
+        elapsed_seconds=elapsed_seconds,
+    )
 
 
 def main() -> None:
     """Executa todo o fluxo de automação e imprime o payload JSON."""
 
-    available_spots = run_automation()
+    result = run_automation()
 
-    print(json.dumps(available_spots, ensure_ascii=False, indent=2))
+    print(json.dumps(result.to_dict(), ensure_ascii=False, indent=2))
 
 
 if __name__ == "__main__":

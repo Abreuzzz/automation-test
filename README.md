@@ -60,3 +60,28 @@ repositório** nas configurações do GitHub:
 Os scripts esperam as variáveis de ambiente `TELEGRAM_BOT_TOKEN` e
 `TELEGRAM_CHAT_ID` durante a execução (por exemplo, em um workflow do
 GitHub Actions).
+
+## Execução automática no GitHub Actions
+
+Este repositório inclui o workflow
+`.github/workflows/studio-automation.yml`, responsável por executar a
+automação automaticamente todos os dias, a cada hora, das 10h às 23h
+(horário de São Paulo). O workflow também pode ser disparado manualmente
+pela interface do GitHub (opção **Run workflow**).
+
+Durante a execução, o workflow irá:
+
+1. Fazer o checkout do repositório.
+2. Configurar o Python 3.11.
+3. Instalar as dependências listadas em `requirements.txt`.
+4. Executar `python telegram_notification.py`, reutilizando os segredos
+   `TELEGRAM_BOT_TOKEN` e `TELEGRAM_CHAT_ID` configurados anteriormente.
+
+## Monitoramento do tempo de execução
+
+O módulo `automation` agora registra o horário de início, término e o
+tempo total gasto em cada execução. Essas informações são exibidas no
+terminal sempre que `telegram_notification.py` é executado, inclusive no
+GitHub Actions. Quando o workflow roda na plataforma do GitHub, o tempo
+de execução também é anexado automaticamente ao **Step Summary** da
+execução, facilitando a consulta posterior.
