@@ -109,7 +109,7 @@ class FormattedSummary:
 
 
 def _format_bike_codes(codes: List[str]) -> Tuple[str, str]:
-    """Gera a representação das bikes em HTML (com spoiler) e texto plano."""
+    """Gera a representação das bikes em HTML e texto plano."""
 
     if not codes:
         return (
@@ -120,8 +120,7 @@ def _format_bike_codes(codes: List[str]) -> Tuple[str, str]:
     joined_plain = ", ".join(codes)
     joined_html = escape(" • ".join(codes))
     return (
-        f"<b>{len(codes)} bike{'s' if len(codes) > 1 else ''} livres:</b> "
-        f"<tg-spoiler>{joined_html}</tg-spoiler>",
+        f"<b>{len(codes)} bike{'s' if len(codes) > 1 else ''} livres:</b> {joined_html}",
         f"{len(codes)} bike{'s' if len(codes) > 1 else ''} livres: {joined_plain}",
     )
 
@@ -202,10 +201,15 @@ def format_spot_summary(spots: Iterable[Dict[str, Any]]) -> FormattedSummary:
         html_lines.append(header_html)
         text_lines.append(header_text)
 
-        for event_group in day_groups.values():
+        for index, event_group in enumerate(day_groups.values()):
             spots_for_event = event_group["spots"]
             if not spots_for_event:
                 continue
+
+            if index > 0:
+                separator = "──────────────"
+                html_lines.extend([separator, ""])
+                text_lines.extend([separator, ""])
 
             representative_spot = spots_for_event[0]
             start_dt = event_group.get("start_dt")
