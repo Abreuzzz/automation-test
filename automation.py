@@ -181,7 +181,7 @@ def extract_available_spots(event_payload: Dict) -> List[Dict]:
     first_name = instructor_detail.get("first_name", "")
     last_name = instructor_detail.get("last_name", "")
     instructor_name = " ".join(part for part in (first_name, last_name) if part).strip()
-    tagline = instructor_detail.get("tagline")
+    tagline = event_payload.get("tagline") or instructor_detail.get("tagline")
 
     duration_time = event_payload.get("duration_time")
     event_hour = event_payload.get("event_hour")

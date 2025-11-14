@@ -6,6 +6,7 @@ publica um resumo em um chat do Telegram.
 
 from __future__ import annotations
 
+import argparse
 import os
 from typing import Dict, Iterable, List, Optional
 
@@ -81,14 +82,52 @@ def send_telegram_message(
     return response.json()
 
 
-def main() -> None:
-    """Executa o fluxo completo e envia a mensagem ao Telegram."""
+def _build_parser() -> argparse.ArgumentParser:
+    """Cria o parser de argumentos de linha de comando."""
 
-    token = os.environ.get("TELEGRAM_BOT_TOKEN")
-    chat_id = os.environ.get("TELEGRAM_CHAT_ID")
+    parser = argparse.ArgumentParser(
+        description=(
+            "Coleta as aulas disponíveis e envia o resumo via Telegram. "
+            "Use --dry-run para apenas exibir a mensagem localmente."
+        )
+    )
+    parser.add_argument(
+        "--token",
+        help=(
+            "Token do bot do Telegram. Substitui a variável de ambiente "
+            "TELEGRAM_BOT_TOKEN quando informado."
+        ),
+    )
+    parser.add_argument(
+        "--chat-id",
+        help=(
+            "Identificador do chat do Telegram. Substitui a variável de ambiente "
+            "TELEGRAM_CHAT_ID quando informado."
+        ),
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Apenas imprime o resumo gerado sem enviar mensagem ao Telegram.",
+    )
+
+    return parser
+
+
+def main() -> None:
+    """Executa o fluxo completo e envia ou imprime a mensagem."""
+
+    args = _build_parser().parse_args()
+
+    token = args.token or os.environ.get("TELEGRAM_BOT_TOKEN")
+    chat_id = args.chat_id or os.environ.get("TELEGRAM_CHAT_ID")
 
     available_spots = automation.run_automation()
     message = format_spot_summary(available_spots)
+
+    if args.dry_run:
+        print(message)
+        return
 
     send_telegram_message(token or "", chat_id or "", message)
 

@@ -7,6 +7,43 @@ Este repositório contém dois scripts principais:
 - `telegram_notification.py`: utiliza o resultado do módulo `automation` para
   enviar um resumo das aulas disponíveis para um chat do Telegram.
 
+## Execução local
+
+1. Crie e ative um ambiente virtual, depois instale as dependências:
+
+   ```bash
+   python -m venv .venv
+   source .venv/bin/activate
+   pip install -r requirements.txt
+   ```
+
+2. Exporte as variáveis de ambiente necessárias (quando quiser enviar a
+   notificação de fato):
+
+   ```bash
+   export TELEGRAM_BOT_TOKEN="seu-token"
+   export TELEGRAM_CHAT_ID="seu-chat-id"
+   ```
+
+3. Execute a automação isoladamente para inspecionar o JSON retornado:
+
+   ```bash
+   python automation.py
+   ```
+
+4. Para enviar o resumo pelo Telegram utilize:
+
+   ```bash
+   python telegram_notification.py
+   ```
+
+   Caso deseje apenas visualizar a mensagem formatada sem enviá-la (por exemplo,
+   em um teste local), acrescente a opção `--dry-run`:
+
+   ```bash
+   python telegram_notification.py --dry-run
+   ```
+
 ## Configuração do Token do Telegram como segredo no GitHub
 
 Para manter o token do bot em sigilo, configure-o como um **segredo de
