@@ -65,7 +65,7 @@ GitHub Actions).
 
 Este repositório inclui o workflow
 `.github/workflows/studio-automation.yml`, responsável por executar a
-automação automaticamente todos os dias, a cada hora, das 10h às 23h
+automação automaticamente todos os dias, a cada 30 minutos, das 10h às 23h
 (horário de São Paulo). O workflow também pode ser disparado manualmente
 pela interface do GitHub (opção **Run workflow**).
 
