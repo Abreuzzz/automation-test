@@ -1,0 +1,133 @@
+https://studiovelocity.com.br/api/v1/events/schedule/?page=1&sort=start_time&date_from=2025-11-13&date_to=2025-11-27&is_canceled=false&unit_list=35&activity_list=1&timezone_from_unit=35
+
+{
+	"count": 60,
+	"next": "https://studiovelocity.com.br/api/v1/events/schedule/?activity_list=1&date_from=2025-11-13&date_to=2025-11-27&instructor=525&is_canceled=false&page=2&sort=start_time&timezone_from_unit=35&unit_list=35",
+	"previous": null,
+	"results": [
+		{
+			"token": "c954204e-8df3-4ce2-8c9f-a6eb043557c5",
+			"instructor": 127,
+			"instructor_others": [],
+			"activity": 1,
+			"subactivity": "",
+			"room": 59,
+			"map": 28,
+			"name": "Bike",
+			"tagline": "",
+			"description": "",
+			"duration_time": 45,
+			"event_type": "presential",
+			"credit_quantity": 1,
+			"show_instructor": true,
+			"waitinglist_enabled": true,
+			"start_time": "2025-11-13T07:00:00-03:00",
+			"end_time": "2025-11-13T07:45:00-03:00",
+			"week_number": "2025-46",
+			"max_attendees": 30,
+			"closed_at": "2025-11-13T07:59:34.362961-03:00",
+			"blocked_spots": [
+				"16"
+			],
+			"max_books_per_user": 1,
+			"slug": "aula",
+			"allow_overbook": false,
+			"credit_types": [
+				82,
+				6,
+				502
+			],
+			"color_code": "",
+			"css_classes": "",
+			"book_with_invitation_only": false,
+			"book_by_staff_only": false,
+			"is_subscribable": true,
+			"event_template": 2928,
+			"tags": [],
+			"has_tickets": false,
+			"nocredits_package_category": null,
+			"late_cancel_limit": null,
+			"cancelation_reason": "",
+			"totalpass_booking_enabled": true,
+			"visible_from": "2025-11-02T15:00:00-03:00",
+			"image": null,
+			"service": null,
+			"event_date": "2025-11-13",
+			"event_hour": "07:00:00",
+			"attendees_booked": 25,
+			"is_full": false,
+			"is_new_event": false,
+			"last_spots": false,
+			"extra_css_classes": "",
+			"is_draft": false,
+			"show_in_schedule": true,
+			"thankyou_html": "",
+			"activity_detail": {
+				"id": 1,
+				"name": "bike",
+				"tagline": "",
+				"slug": "bike",
+				"small_image": null,
+				"medium_image": null,
+				"large_image": null,
+				"color_code": "#ffe537",
+				"css_classes": "bike",
+				"tags": [
+					"bike"
+				],
+				"use_as_filter": true,
+				"meta_title": "",
+				"meta_description": "",
+				"allowed_for_age_from": null,
+				"allowed_for_age_to": null,
+				"allowed_for_gender": "both",
+				"minimum_hours_between_books": 0,
+				"is_cycling": true,
+				"survey_ask_checkin": [
+					1
+				],
+				"survey_ask_multiple": 3,
+				"survey_ask_percent": 100,
+				"survey_ask_interval": 1,
+				"survey_status": "enabled-csat",
+				"survey_question": "Como você avalia esta aula?",
+				"survey_question_reason": "Você gostaria de nos deixar algum comentário?",
+				"survey_question_good": "O que você mais gostou?",
+				"survey_question_improove": "O que temos a melhorar?",
+				"survey_answer_good": [
+					"Instrutor",
+					"Música",
+					"Equipamento",
+					"Limpeza",
+					"Recepção",
+					"Instalações"
+				],
+				"survey_answer_improove": [
+					"Instrutor",
+					"Música",
+					"Equipamento",
+					"Limpeza",
+					"Recepção",
+					"Instalações"
+				]
+			},
+			"event_template_info": {
+				"id": 2928,
+				"name": "Bike",
+				"is_subscribable": true,
+				"use_only_time_fields": false
+			},
+			"is_recurrency_active": true,
+			"canceled_by": null,
+			"canceled_at": null,
+			"canceled_by_email": null,
+			"show_as_special": false,
+			"gurupass_booking_enabled": false,
+			"classpass_booking_enabled": true,
+			"gympass_booking_enabled": false,
+			"gympass_opens_at": 6,
+			"classpass_opens_at": 6,
+			"bookable_until": null
+		}
+	]
+}
