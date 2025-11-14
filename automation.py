@@ -194,7 +194,7 @@ def fetch_event_details(session: requests.Session, token: str) -> Dict:
     return response.json()
 
 
-def extract_available_spots(event_payload: Dict) -> List[Dict]:
+def extract_available_spots(event_payload: Dict, start_time: datetime) -> List[Dict]:
     """Extrai os lugares disponíveis com informações do instrutor a partir do payload."""
 
     instructor_detail = event_payload.get("instructor_detail") or {}
@@ -228,6 +228,7 @@ def extract_available_spots(event_payload: Dict) -> List[Dict]:
                 "instructor_nickname": nickname,
                 "instructor_name": instructor_name,
                 "instructor_tagline": tagline,
+                "start_time": start_time.isoformat(),
             }
         )
 
@@ -243,7 +244,9 @@ def collect_available_spots(
     all_spots: List[Dict] = []
     for schedule_event in schedule_events:
         payload = fetch_event_details(session, schedule_event.token)
-        all_spots.extend(extract_available_spots(payload))
+        all_spots.extend(
+            extract_available_spots(payload, schedule_event.start_time)
+        )
 
     return all_spots
 

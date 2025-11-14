@@ -8,7 +8,9 @@ from __future__ import annotations
 
 import argparse
 import os
-from typing import Dict, Iterable, List, Optional
+from collections import defaultdict
+from datetime import datetime
+from typing import Any, Dict, Iterable, List, Optional
 
 import requests
 
@@ -18,34 +20,110 @@ import automation
 TELEGRAM_API_URL = "https://api.telegram.org/bot{token}/sendMessage"
 
 
-def format_spot_summary(spots: Iterable[Dict]) -> str:
+WEEKDAY_LABELS = [
+    "Segunda-feira",
+    "Terça-feira",
+    "Quarta-feira",
+    "Quinta-feira",
+    "Sexta-feira",
+    "Sábado",
+    "Domingo",
+]
+
+
+def _parse_start_time(value: Optional[str]) -> Optional[datetime]:
+    """Converte um ``start_time`` ISO em ``datetime`` quando possível."""
+
+    if not value:
+        return None
+
+    try:
+        return datetime.fromisoformat(value)
+    except ValueError:
+        return None
+
+
+def _build_instructor_label(spot: Dict[str, Any]) -> str:
+    """Monta um texto amigável para o instrutor."""
+
+    nickname = spot.get("instructor_nickname") or ""
+    name = spot.get("instructor_name") or ""
+
+    if nickname and name and nickname.lower() not in name.lower():
+        return f"{name} ({nickname})"
+
+    return nickname or name or "Instrutor"
+
+
+def format_spot_summary(spots: Iterable[Dict[str, Any]]) -> str:
     """Gera uma mensagem amigável para envio ao Telegram."""
 
-    spots_list = list(spots)
+    spots_list = sorted(
+        list(spots),
+        key=lambda item: item.get("start_time") or item.get("event_hour") or "",
+    )
+
     if not spots_list:
         return "Nenhuma vaga disponível encontrada no período consultado."
 
+    grouped_spots: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
+    for spot in spots_list:
+        start_dt = _parse_start_time(spot.get("start_time"))
+        if start_dt is not None:
+            key = start_dt.date().isoformat()
+        else:
+            key = "sem-data"
+        grouped_spots[key].append(spot)
+
+    ordered_keys = sorted(
+        grouped_spots.keys(),
+        key=lambda key: (key == "sem-data", key),
+    )
+
     lines: List[str] = [
-        "Aulas disponíveis:",
+        "🏋️‍♀️ Vagas de aula liberadas!",
+        "",
+        "Olha só o que encontramos nas próximas duas semanas:",
         "",
     ]
 
-    for spot in spots_list:
-        event_name = spot.get("event_name", "Aula")
-        event_hour = spot.get("event_hour", "Horário não informado")
-        instructor = spot.get("instructor_nickname") or spot.get("instructor_name") or "Instrutor"
-        code = spot.get("spot_code") or "Código indisponível"
-        duration = spot.get("duration_time")
+    for key in ordered_keys:
+        day_spots = grouped_spots[key]
+        representative = day_spots[0]
+        start_dt = _parse_start_time(representative.get("start_time"))
 
-        line_parts = [f"• {event_name} ({event_hour})"]
-        line_parts.append(f"Instrutor: {instructor}")
-        line_parts.append(f"Bike: {code}")
-        if duration:
-            line_parts.append(f"Duração: {duration}")
+        if start_dt is None:
+            header = "📅 Data não informada"
+        else:
+            weekday = WEEKDAY_LABELS[start_dt.weekday()]
+            header = f"📅 {start_dt.strftime('%d/%m/%Y')} ({weekday})"
 
-        lines.append(" | ".join(line_parts))
+        lines.append(header)
 
-    return "\n".join(lines)
+        for spot in day_spots:
+            start_dt = _parse_start_time(spot.get("start_time"))
+            event_hour = spot.get("event_hour")
+            if start_dt is not None and not event_hour:
+                event_hour = start_dt.strftime("%H:%M")
+
+            event_name = spot.get("event_name") or "Aula"
+            instructor = _build_instructor_label(spot)
+            code = spot.get("spot_code") or "Código indisponível"
+            duration = spot.get("duration_time")
+            tagline = spot.get("instructor_tagline")
+
+            lines.append(f"   • {event_hour or 'Horário não informado'} — {event_name}")
+            lines.append(f"     Instrutor: {instructor}")
+            if tagline:
+                lines.append(f"     ✨ {tagline}")
+            lines.append(f"     Bike liberada: {code}")
+            if duration:
+                lines.append(f"     Duração: {duration}")
+            lines.append("")
+
+    lines.append("Boas pedaladas! 🚴‍♀️")
+
+    return "\n".join(lines).strip()
 
 
 def send_telegram_message(
@@ -135,9 +213,15 @@ def main() -> None:
     summary_path = os.environ.get("GITHUB_STEP_SUMMARY")
     if summary_path:
         with open(summary_path, "a", encoding="utf-8") as summary_file:
-            summary_file.write(f"{execution_report}\n")
+            summary_file.write(f"{execution_report}\n\n{message}\n")
 
     if args.dry_run:
+        print(message)
+        print()
+        print(execution_report)
+        return
+
+    if not available_spots:
         print(message)
         print()
         print(execution_report)
