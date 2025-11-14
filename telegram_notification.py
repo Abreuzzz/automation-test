@@ -18,6 +18,7 @@ import automation
 
 
 TELEGRAM_API_URL = "https://api.telegram.org/bot{token}/sendMessage"
+TELEGRAM_MESSAGE_LIMIT = 4096
 
 
 WEEKDAY_LABELS = [
@@ -29,6 +30,48 @@ WEEKDAY_LABELS = [
     "Sábado",
     "Domingo",
 ]
+
+
+def _split_message(message: str, *, limit: int = TELEGRAM_MESSAGE_LIMIT) -> List[str]:
+    """Divide uma mensagem longa em pedaços aceitos pelo Telegram."""
+
+    if len(message) <= limit:
+        return [message]
+
+    chunks: List[str] = []
+    current_lines: List[str] = []
+    current_len = 0
+
+    for line in message.splitlines():
+        line_len = len(line)
+
+        if line_len > limit:
+            # Garante que linhas gigantes não quebrem o envio fatiando-as diretamente.
+            if current_lines:
+                chunks.append("\n".join(current_lines))
+                current_lines = []
+                current_len = 0
+
+            for start in range(0, line_len, limit):
+                chunks.append(line[start : start + limit])
+            continue
+
+        additional = line_len if not current_lines else line_len + 1
+        if current_lines and current_len + additional > limit:
+            chunks.append("\n".join(current_lines))
+            current_lines = [line]
+            current_len = line_len
+        else:
+            if current_lines:
+                current_len += 1 + line_len
+            else:
+                current_len = line_len
+            current_lines.append(line)
+
+    if current_lines:
+        chunks.append("\n".join(current_lines))
+
+    return chunks
 
 
 def _parse_start_time(value: Optional[str]) -> Optional[datetime]:
@@ -142,22 +185,42 @@ def send_telegram_message(
 
     payload = {
         "chat_id": chat_id,
-        "text": message,
         "disable_web_page_preview": True,
     }
 
+    responses: List[Dict[str, Any]] = []
+    messages = _split_message(message)
+
     internal_session = session or requests.Session()
-    response = internal_session.post(
-        TELEGRAM_API_URL.format(token=token),
-        json=payload,
-        timeout=30,
-    )
-    response.raise_for_status()
 
-    if session is None:
-        internal_session.close()
+    try:
+        for chunk in messages:
+            payload["text"] = chunk
+            response = internal_session.post(
+                TELEGRAM_API_URL.format(token=token),
+                json=payload,
+                timeout=30,
+            )
+            try:
+                response.raise_for_status()
+            except requests.HTTPError as exc:  # type: ignore[attr-defined]
+                try:
+                    error_payload = response.json()
+                    detail = error_payload.get("description") or error_payload
+                except ValueError:
+                    detail = response.text
+                raise requests.HTTPError(
+                    f"Falha ao enviar mensagem ao Telegram: {detail}",
+                    response=response,
+                    request=exc.request,
+                ) from exc
 
-    return response.json()
+            responses.append(response.json())
+    finally:
+        if session is None:
+            internal_session.close()
+
+    return responses[-1] if responses else {}
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -233,3 +296,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
