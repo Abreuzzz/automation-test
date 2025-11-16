@@ -88,9 +88,9 @@ mensagens serão direcionadas apenas para o chat pessoal.
 
 Este repositório inclui o workflow
 `.github/workflows/studio-automation.yml`, responsável por executar a
-automação automaticamente todos os dias, a cada 1 hora, das 10h às 23h
-(horário de São Paulo). O workflow também pode ser disparado manualmente
-pela interface do GitHub (opção **Run workflow**).
+automação automaticamente todos os dias, a cada hora entre 13h e
+meia-noite (horário de São Paulo). O workflow também pode ser disparado manualmente pela
+interface do GitHub (opção **Run workflow**).
 
 Durante a execução, o workflow irá:
 
